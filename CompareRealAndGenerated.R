@@ -67,12 +67,11 @@ print(combined_check)
 ## Experiment 3 Replication
 
 # Read true data
-real_data <- read.csv('RealData/reproduction_tasks.csv') %>%
-  filter(experiment_name == 'Replication') %>%
+real_data <- read.csv('RealData/reproduction_replication.csv') %>%
   group_by(subject_identifier, practice) %>%
   mutate(trial_number = 1:n()) %>%
   ungroup() %>%
-  select(protocol_sum, subject_identifier, direction, flash_distance, acceleration, practice, PID, trial_number)
+  select(protocol_sum, subject_identifier, direction, flash_distance, acceleration, practice, trial_number)
 
 # Read generated data
 gen_data <- read.csv('GeneratedTrials/Exp3Rep_trial_data.csv') %>%
@@ -103,7 +102,7 @@ combined = real_data %>%
 combined_check = combined %>%
   mutate(
     acceleration_matches = gen_acceleration == acceleration,
-    flash_distance_matches = gen_flash_distance == flash_distance,
+    flash_distance_matches = round(gen_flash_distance, 5) == round(flash_distance, 5), # Rounding as there is some computer error
     direction_matches = gen_direction == direction
   ) %>%
   reframe(
@@ -128,12 +127,11 @@ print(combined_check)
 ## Experiment 3 Second Replication
 
 # Read true data
-real_data <- read.csv('RealData/reproduction_tasks.csv') %>%
-  filter(experiment_name == 'Second Replication') %>%
+real_data <- read.csv('RealData/reproduction_second_replication.csv') %>%
   group_by(subject_identifier, practice) %>%
   mutate(trial_number = 1:n()) %>%
   ungroup() %>%
-  select(protocol_sum, subject_identifier, direction, flash_distance, acceleration, practice, PID, trial_number)
+  select(protocol_sum, subject_identifier, direction, flash_distance, acceleration, practice, trial_number)
 
 # Read generated data
 gen_data <- read.csv('GeneratedTrials/Exp3SecRep_trial_data.csv') %>%
@@ -164,7 +162,7 @@ combined = real_data %>%
 combined_check = combined %>%
   mutate(
     acceleration_matches = gen_acceleration == acceleration,
-    flash_distance_matches = gen_flash_distance == flash_distance,
+    flash_distance_matches = round(gen_flash_distance, 5) == round(flash_distance, 5),
     direction_matches = gen_direction == direction
   ) %>%
   reframe(
