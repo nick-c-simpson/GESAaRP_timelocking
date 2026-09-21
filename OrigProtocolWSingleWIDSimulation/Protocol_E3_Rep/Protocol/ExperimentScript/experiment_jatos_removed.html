@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-fullscreen-automatic.js"></script>
+    <script src="jspsych/mersenne-twister.js"></script>
+    <script src="jspsych/plugin-survey-text.js"></script>
+    <script src="setup.js"></script>
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/plugin-flash-find.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />    
+  </head>
+<body></body>
+<script>
+
+    const jsPsych = initJsPsych({        
+        on_finish: function(){           
+            //Puts data as csv on Jatos
+            resultCSV = jsPsych.data.get().csv();        
+            //jatos.submitResultData(resultCSV, jatos.startNextComponent);
+            
+        }
+    }) 
+
+    function hexToBytes(hex) {
+        for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+        return bytes;
+    };
+
+    // Added code to input the SHA256 key and a subject identifier
+    // Moved mesenne twister initialisation here
+    // Added makeTimeline in on_finish to take user input
+    var m = new MersenneTwister();
+    Math.random = function() {return m.random()};
+    var protocol_sum;
+    var details_input = {
+        type: jsPsychSurveyText,
+        questions: [
+            {name: 'SHAkey', prompt: 'Enter the SHA256 Key (Suggested: 1eb790ef60490abcfad75adea5f0c5bb57efe5127077b1f397772025d94f2b3f).', required: true, columns: 70},
+            {name: 'WID', prompt: 'Enter a subject identifier (e.g. 817568).', required: true, columns: 70}
+        ],
+        on_finish: function(data) {
+            protocol_sum = data.response.SHAkey;
+            subject_identifier = data.response.WID;
+
+            //Undefined added to end of string as window.part was included accidentally (as the batch session "part" was not defined all Ps had undefined)
+            subject_sum = hexToBytes(
+            CryptoJS.SHA256(
+                protocol_sum+subject_identifier+'undefined').toString()
+            );
+            m.init_by_array(subject_sum, subject_sum.length);
+            jsPsych.data.addProperties({'protocol_sum':protocol_sum,
+                'subject_identifier':subject_identifier, 'subject_sum':subject_sum});
+
+            jsPsych.addNodeToEndOfTimeline({ timeline: makeTimeline() });
+        }
+    }
+
+    jsPsych.run([details_input]);
+
+    function makeTimeline(){
+
+        //var subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+        //var study_id = jatos.urlQueryParameters.STUDY_ID;
+        //var session_id = jatos.urlQueryParameters.SESSION_ID;
+
+        //Variables for number of practices and trials and the variables used
+        var number_of_practices_flash = 4;
+        var number_of_trials_flash = 20;
+        var practice_number_flash = 0;
+        var trial_number_flash = 0;
+        var trial_variables_flash = [];
+        var practice_variables_flash = [];
+
+        var number_of_blocks = 10;
+        var block_number = 0;
+        var practice_block_number = 0;
+
+        practice_variables_flash = flash_setup_vertical(true);
+        trial_variables_flash = flash_setup_vertical(false);
+        console.log(trial_variables_flash)
+
+        //Enter fullscreen so everything is displayed well
+        var enter_fullscreen = {
+            type: jsPsychFullscreenAutomatic,
+            fullscreen_mode: true,
+            message: `
+            <div class = 'instructions'>
+                <p>Please turn your screen brightness to full if you can.</p>
+                <p>Click continue to enter full screen and start the real experiment.</p>
+                <p>Please keep full screen mode on throughout.</p>
+            </div>
+            `,
+            delay: 1000,
+            choices: "ALL_KEYS",
+            on_finish: function(data){
+                data.rt = null;
+                data.stimulus = null;
+                data.response = null;
+                data.x_click = null;
+                data.y_click = null;
+                data.x_flash = null;
+                data.y_flash = null;
+                data.canvas_size = null;
+                data.mouse_positions = null;
+                data.flash_time = null;
+                data.initial_speed = null;
+                data.final_speed = null;
+                data.background = null;
+                data.start_time = null;
+                data.virtual_space_size = null;
+                data.image_ratio = null;
+                data.feedback = null;
+                data.rt_from_ball = null;
+                data.expected = null;
+                data.condition = null;
+                data.practice = null;
+                data.flash_distance = null;
+                data.flash_duration = null;
+                data.flash_colour = null;
+                data.screen_duration = null;
+                data.ball_colour = null;
+                data.ball_size = null;
+                data.trial_number = null;
+                data.ball_start_time = null;
+                data.acceleration = null;
+                data.direction = null;
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;
+                data.block_number = null;
+            }
+        }
+
+        var main_instructions = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+            <div class = 'instructions'>
+                <p>In this study, you will be shown a ball travelling on the screen and at some point it will briefly flash a different colour.<br>
+                    We will ask you to click with your mouse where you saw the ball flash.</p>
+                <p>You will be given more precise instructions and 4 practice trials for this task before starting. <br>
+                    Then there will be 10 blocks of 20 trials, which should last around 15 minutes total.</p>
+            </div>`,
+            choices: ['Continue']
+        }
+        
+        var flash_instructions = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+            <div class = 'instructions'>
+                <p>In this task you will see a ball appear at the top or the bottom of the screen.<br>
+                It will then begin to move vertically.</p>
+                <p>The ball will briefly flash a different colour at some point along its motion.<br>
+                Once the ball has left the screen, we would like you to click where you saw the ball flash.</p>
+                <p>Your cursor will be a black dot and clicking will save your response.</p>
+                <p>We will now give you 4 practice trials.<br>
+                During the practice trials we will tell you how close you were.<br>
+                After the practice we will show you your mean score every block.</p>
+                <p>Take your time to respond and try to be as accurate as possible.</p>
+            </div>`,
+            choices: ['Continue']
+        }
+
+        var flash_find_practice = {
+            type: jsPsychFlashFind,
+            flash_distance: function(){return practice_variables_flash[practice_number_flash].flash_distance;},
+            flash_duration: function(){return practice_variables_flash[practice_number_flash].flash_duration;},
+            flash_colour:  function(){return practice_variables_flash[practice_number_flash].flash_colour;},
+            screen_duration:  function(){return practice_variables_flash[practice_number_flash].screen_duration;},
+            ball_colour: function(){return practice_variables_flash[practice_number_flash].ball_colour;},
+            ball_size: function(){return practice_variables_flash[practice_number_flash].ball_size;},
+            trial_number: function(){return practice_number_flash+1;},
+            total_number_of_trials: number_of_practices_flash,
+            ball_start_time: function(){return practice_variables_flash[practice_number_flash].ball_start_time;},
+            acceleration:  function(){return practice_variables_flash[practice_number_flash].acceleration;},
+            direction: function(){return practice_variables_flash[practice_number_flash].direction;},
+            give_feedback: function(){return practice_variables_flash[practice_number_flash].feedback;},
+            question_type: function(){return practice_variables_flash[practice_number_flash].question_type;},
+            background: function(){return practice_variables_flash[practice_number_flash].background;},
+            time_ball_shown_at_beginning: function(){return practice_variables_flash[practice_number_flash].ball_begin_time;},
+            on_finish: function(data){
+                data.practice = true;
+                data.condition = practice_variables_flash[practice_number_flash].condition;
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;
+                resultCSV = jsPsych.data.get().csv();
+                //jatos.submitResultData(resultCSV);
+                practice_number_flash++;
+            }
+        }
+
+        var resultspractice_flash = {
+            type: jsPsychHtmlKeyboardResponse,        
+            stimulus: function(){
+                var mean_rt = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: true}]).select('rt_from_ball').mean();
+                var y_clicks = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: true}]).select('y_click').values;
+                var y_flashes = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: true}]).select('y_flash').values;
+                var deviations = y_clicks.map(function(item, index) {return Math.abs(item - y_flashes[index]);});
+                var mean_deviation = deviations.reduce((prev, current) => prev + current) / deviations.length;
+
+                var canvas_sizes = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: true}]).select('canvas_size').values;
+                var mean_canvas_size = canvas_sizes.reduce((prev, current) => prev + current) / canvas_sizes.length;
+                var ball_sizes = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: true}]).select('ball_size').values;
+                var mean_ball_size = ball_sizes.reduce((prev, current) => prev + current) / ball_sizes.length;
+                var mean_deviation_as_screen_proportion = mean_deviation/mean_canvas_size;
+                var mean_deviation_in_ball_diameters = mean_deviation_as_screen_proportion/mean_ball_size;
+                //Present the stats to the screen
+                return(`
+                <div class = 'instructions'>
+                    <p>Practice complete.</p>
+                    <p>Your mean reaction time was ` + Math.round(mean_rt) + `ms.</p>
+                    <p>Your mean deviation from the flash was ` + Math.round(mean_deviation_in_ball_diameters*10)/10 + ` diameter(s) of the ball.</p>
+                    <p>Press space to continue.
+                </div>`);
+            },                   
+            choices: [' ']
+        }
+
+        var practice_procedure_flash = {
+            timeline: [flash_find_practice],
+            loop_function(){
+                if(practice_number_flash<number_of_practices_flash){
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        var practice = {
+            timeline: [flash_instructions, practice_procedure_flash, resultspractice_flash]
+        }
+
+        var block_screen_flash = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: function(){
+                return `
+                <div class = 'instructions'>
+                    <p>Click where the ball flashes.</p>
+                    <p>This is block number `+(block_number+1)+` out of `+number_of_blocks+`</p>
+                    <p>Press the start button to begin.</p>
+                </div>
+            `},
+            choices: ['Continue']
+        }
+
+        var flash_find = {
+            type: jsPsychFlashFind,
+            flash_distance: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_distance;},
+            flash_duration: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_duration;},
+            flash_colour:  function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_colour;},
+            screen_duration:  function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].screen_duration;},
+            ball_colour: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_colour;},
+            ball_size: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_size;},
+            trial_number: function(){return trial_number_flash+1;},
+            total_number_of_trials: number_of_trials_flash,
+            ball_start_time: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_start_time;},
+            acceleration:  function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].acceleration;},
+            direction: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].direction;},
+            give_feedback: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].feedback;},
+            question_type: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].question_type;},
+            background: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].background;},
+            time_ball_shown_at_beginning: function(){return trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_begin_time;},
+            on_finish: function(data){
+                data.practice = false;
+                data.flash_distance = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_distance;
+                data.flash_duration = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_duration;
+                data.flash_colour = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].flash_colour;
+                data.screen_duration = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].screen_duration;
+                data.ball_colour = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_colour;
+                data.ball_size = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_size;
+                data.trial_number = trial_number_flash;
+                data.block_number = block_number;
+                data.ball_start_time = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].ball_start_time;
+                data.acceleration = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].acceleration;
+                data.direction = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].direction;
+                data.condition = trial_variables_flash[block_number*number_of_trials_flash+trial_number_flash].condition;
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;
+                resultCSV = jsPsych.data.get().csv();
+                //jatos.submitResultData(resultCSV);
+                trial_number_flash++;
+            }
+        }
+
+        var resultsblock_flash = {
+            type: jsPsychHtmlKeyboardResponse,        
+            stimulus: function(){
+                //Present the stats to the screen
+                var mean_rt = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: false, block_number: block_number}]).select('rt_from_ball').mean();
+                var y_clicks = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: false, block_number: block_number}]).select('y_click').values;
+                var y_flashes = jsPsych.data.get().filter([{trial_type: 'flash_find',practice: false, block_number: block_number}]).select('y_flash').values;
+                var deviations = y_clicks.map(function(item, index) {return Math.abs(item - y_flashes[index]);});
+                var mean_deviation = deviations.reduce((prev, current) => prev + current) / deviations.length;
+
+                var canvas_sizes = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: false, block_number: block_number}]).select('canvas_size').values;
+                var mean_canvas_size = canvas_sizes.reduce((prev, current) => prev + current) / canvas_sizes.length;
+                var ball_sizes = jsPsych.data.get().filter([{trial_type: 'flash_find', practice: false, block_number: block_number}]).select('ball_size').values;
+                var mean_ball_size = ball_sizes.reduce((prev, current) => prev + current) / ball_sizes.length;
+                var mean_deviation_as_screen_proportion = mean_deviation/mean_canvas_size;
+                var mean_deviation_in_ball_diameters = mean_deviation_as_screen_proportion/mean_ball_size;
+                
+                return(`
+                <div class = 'instructions'>
+                    <p>Block `+(block_number+1)+` complete.</p>
+                    <p>Your mean reaction time for this block was `+(Math.round(mean_rt))+` ms</p>
+                    <p>Your mean deviation from the ball was `+(Math.round(mean_deviation_in_ball_diameters*10)/10) +` ball diameters</p>
+                    <p>Press space to continue.
+                </div>`);
+            },
+            choices: [' '],
+            on_finish: function(){
+                trial_number_flash = 0;
+            }
+        } 
+
+        var procedure_flash = {
+            timeline: [flash_find],
+            loop_function(){
+                if(trial_number_flash<number_of_trials_flash){
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        var main_study = {
+            timeline: [block_screen_flash, procedure_flash, resultsblock_flash],
+            loop_function(){
+                block_number = block_number + 1;
+                if(block_number < number_of_blocks){
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return([enter_fullscreen, main_instructions, practice, main_study])    
+    }
+
+
+    //Put it all into an experiment     
+
+    //jatos.onLoad(() => {
+        //jatos.addAbortButton();
+        //var m = new MersenneTwister();
+        //Math.random = function() {return m.random()};
+        //var protocol_sum = jatos.batchSession.get("protocol_sum");
+        //window.part = jatos.batchSession.get("part");
+        //window.PROLIFIC_PID = jatos.urlQueryParameters.PROLIFIC_PID;
+        //var subject_identifier = jatos.workerId;
+        //subject_sum = hexToBytes(CryptoJS.SHA256(protocol_sum+subject_identifier+window.part).toString());
+        //m.init_by_array(subject_sum, subject_sum.length);
+        //jsPsych.data.addProperties({'protocol_sum':protocol_sum,'subject_identifier':subject_identifier, 'subject_sum':subject_sum});
+        //var timeline=makeTimeline();
+        //jsPsych.run(timeline);
+    //});
+
+</script>
+
+</html>

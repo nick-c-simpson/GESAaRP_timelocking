@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jatos.js"></script>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-survey-html-form.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />  
+  </head>
+<body></body>
+<script>
+
+    var subject_id;
+    var study_id;
+    var session_id;        
+
+    const jsPsych = initJsPsych({        
+        on_finish: function(){                       
+            //Puts data as csv on Jatos 
+            resultCSV = jsPsych.data.get().csv();                    
+            jatos.submitResultData(resultCSV, jatos.startNextComponent);                        
+        }
+    })    
+
+    //Variable used to track whether the checkbox has been pressed for consent
+    var consent_approved = 0;
+
+    //Html form with checkbox to allow participant to give consent to partaking
+    const consent = {
+        type: jsPsychSurveyHtmlForm,
+        preamble: `
+        <p class = 'instructions'>I confirm that by ticking yes in the box below I am consenting to all of the below elements of the study. I understand that by not ticking the box, I will not be able to continue with the study.</p>
+        <ol class='information'>
+            <li>I confirm that I have read and understood the information sheet for the above study. I have had an opportunity to consider the information and have had the opportunity to ask questions which have been answered to my satisfaction.</li>
+            <li>I consent to participate in the study. I understand that my personal information (e.g. Prolific's demographic data) will only be used for the purposes explained to me. I understand that according to data protection legislation, 'public task' will be the lawful basis for processing this data.</li>
+            <li>I understand that my data gathered in this study will be stored securely. The data about my performance on the tasks will be stored separately from information about my identity. It will not be possible to identify me in any publications.</li>
+            <li>I understand that I will be fully compensated if I choose to withdraw after completing the study.</li>
+            <li>I understand that no additional promises or guarantees of benefits have been made to encourage me to participate.</li>
+            <li>I understand that my personal data will not be made available to any commercial organisations.</li>
+            <li>I understand that I will not benefit financially from this study or from any possible outcome it may result in in the future.</li>
+            <li>I agree that fully anonymised versions of my research data may be publicly shared and used by others for future research.</li>
+            <li>I confirm that: (a) I understand the exclusion criteria as detailed in the information sheet and explained to me by the researcher; and (b) I do not fall under the exclusion criteria.</li>
+            <li>I am aware of who I should contact if I wish to lodge a complaint.
+        </ol>`,
+        html: `<input type="checkbox" id="consent" name="consent">
+        <label for="consent"> I consent to the above.</label><br>`,
+        data: {
+            test_type: 'consent_form',                
+        },          
+        //Once continue is pressed, the consent variable can be changed to 1 if the response is on (box checked)
+        on_finish: function(data){
+            if(data.response.consent=="on"){
+                consent_approved = 1;
+                //Response is checked but data correct being true is another way we can confirm the box was ticked                                        
+                data.correct = true;
+                subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+                study_id = jatos.urlQueryParameters.STUDY_ID;
+                session_id = jatos.urlQueryParameters.SESSION_ID;  
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;       
+            }            
+        }    
+    }
+
+    //This forms a loop such that we won't leave the consent page until the box has been checked at the time of pressing continue
+    var consent_procedure = {
+        timeline: [consent],
+        loop_function: function(data){            
+            if (!consent_approved){
+                return true
+            } else {
+                return false
+            }
+        }        
+    }
+
+    //Put it all into an experiment
+    jatos.onLoad(() => {
+        jatos.addAbortButton();
+        jsPsych.run([consent_procedure]);
+    });        
+
+</script>
+
+</html>

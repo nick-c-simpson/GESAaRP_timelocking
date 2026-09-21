@@ -1,0 +1,368 @@
+function input_defaults(conditions){
+    if(!Object.hasOwn(conditions, 'number_of_trials')){
+        conditions.number_of_trials = 108;
+    }
+    if(!Object.hasOwn(conditions, 'distribution')){
+        conditions.distribution = 'NEUTRAL';
+    }
+    if(!Object.hasOwn(conditions, 'direction')){
+        conditions.direction = ['UP'];
+    }
+    if(!Object.hasOwn(conditions, 'colour')){
+        conditions.colour = [{
+            red: 120,
+            green: 120,
+            blue: 120,
+        }];
+    }
+    if(!Object.hasOwn(conditions, 'shape')){
+        conditions.shape = ['CIRCLE'];
+    }
+    if(!Object.hasOwn(conditions, 'cue')){
+        conditions.cue = false;
+    }
+    if(!Object.hasOwn(conditions, 'cue_colour')){
+        conditions.cue_colour = {
+            red: 120,
+            green: 120,
+            blue: 120,
+        };
+    }
+    if(!Object.hasOwn(conditions, 'cue_shape')){
+        conditions.cue_shape = 'SQUARE';
+    }
+    if(!Object.hasOwn(conditions, 'practice')){
+        conditions.practice = false;
+    }
+    if(!Object.hasOwn(conditions, 'group')){
+        conditions.group = 0;
+    }
+    if(!Object.hasOwn(conditions, 'background_orientation')){
+        conditions.background_orientation = [0];
+    }
+    return conditions;
+} 
+
+function setup(conditions){
+    // Requires an array of conditions like below
+    // {number_of_trials: 108,
+    // distribution: 'Positive',
+    // direction: ['LEFT'],
+    // colour: [{
+    //    red: 0,
+    //    green: 0,
+    //    blue: 0
+    //}],
+    // shape: ['CIRCLE'],
+    // cue: false,
+    // cue_colour: [{
+    //    red: 0,
+    //    green: 0,
+    //    blue: 0
+    //}],
+    // cue_shape: 'SQUARE',
+    // practice: false,
+    // group: 1,
+    // background_orientation: [0]}
+    conditions = input_defaults(conditions);
+
+    function add_extreme_trials(trial_order, number_of_extreme_trials, max_allowed_index){
+        var to_length = trial_order.length;
+        var selector = Array.from(Array(max_allowed_index).keys());
+        var extreme_pos = [];
+        for(var i=0; i<number_of_extreme_trials; i++){
+            var selection = Math.round(Math.random()*selector.length);
+            extreme_pos.push(selector[selection]);
+            selector.splice(selection, 1);
+        }
+        extreme_pos = extreme_pos.toSorted((a, b) => a - b);
+        for(var i=0; i<extreme_pos.length; i++){
+            trial_order.splice(extreme_pos[i], 0, i+to_length);
+        }
+        return trial_order;
+    }
+
+    var trial_variables = [];
+    var cond_trials = [];
+    var cond_counter = [];
+    var total_trial_count = [];
+    var condition_groups = [];
+    var max_group_number = 0;
+    var group_trial_count = [];
+    for(var cond = 0; cond<conditions.length; cond++){
+        conditions[cond] = input_defaults(conditions[cond]);
+        if(conditions[cond].group>max_group_number){
+            max_group_number = conditions[cond].group;
+        }
+    }
+    
+    for(var group = 0; group<=max_group_number; group++){
+        total_trial_count[group] = 0;
+        condition_groups[group] = [];
+        group_trial_count[group] = 0;
+    }
+
+    for(var cond = 0; cond<conditions.length; cond++){
+        var condition = [];
+        var dist;
+        var screen_durations;
+        var extreme_trials;
+        var trial_numbers;
+        var trial_order;
+
+        cond_counter.push(0);
+        condition_groups[[conditions[cond].group]].push(cond);
+        total_trial_count[conditions[cond].group] = total_trial_count[conditions[cond].group] + conditions[cond].number_of_trials;
+        if(conditions[cond].number_of_trials == 108){
+            trial_numbers =  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107];
+            if(conditions[cond].distribution == 'Positive'){
+                dist = [-3.54, -3.54, -3.2, -3.2, -2.8, -2.8, -2.1, -2.1, -1.6, -1.6, -1.4, -1.4, -1.06666, -1.06666, -1.06666, -1.06666, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.06666, 1.06666, 1.06666, 1.06666, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.54, 3.54, 3.54, 3.54, 3.54, 3.54, 4.8, 4.8, 4.8, 4.8, 6.4, 6.4, 8, 8, 8, 8, 8, 8];
+                screen_durations = [1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers.slice(0,102));
+                trial_order = add_extreme_trials(trial_order, 6, 20);
+            } else if(conditions[cond].distribution == 'Negative'){
+                dist = [3.54, 3.54, 3.2, 3.2, 2.8, 2.8, 2.1, 2.1, 1.6, 1.6, 1.4, 1.4, 1.06666, 1.06666, 1.06666, 1.06666, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0, 0, 0, 0, 0, 0, 0, 0, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -1.06666, -1.06666, -1.06666, -1.06666, -1.4, -1.4, -1.4, -1.4, -1.4, -1.4, -1.6, -1.6, -1.6, -1.6, -1.6, -1.6, -1.6, -1.6, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.54, -3.54, -3.54, -3.54, -3.54, -3.54, -4.8, -4.8, -4.8, -4.8, -6.4, -6.4, -8, -8, -8, -8, -8, -8];
+                screen_durations = [1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers.slice(0,102));
+                trial_order = add_extreme_trials(trial_order, 6, 20);
+            } else {
+                dist = [-6.4, -6.4, -4.8, -4.8, -3.54, -3.54, -3.54, -3.54, -3.2, -3.2, -2.8, -2.8, -2.1, -2.1, -2.1, -2.1, -2.1, -2.1, -1.6, -1.6, -1.6, -1.6, -1.6, -1.6, -1.4, -1.4, -1.4, -1.4, -1.4, -1.4, -1.4, -1.4, -1.06666,-1.06666, -1.06666,-1.06666, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.06666, 1.06666, 1.06666, 1.06666, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.8, 2.8, 3.2, 3.2, 3.54, 3.54, 3.54, 3.54, 4.8, 4.8, 6.4, 6.4];
+                screen_durations = [1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers);
+            }
+        } else if(conditions[cond].number_of_trials == 54){
+            trial_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53];
+            if(conditions[cond].distribution == 'Positive'){
+                dist = [-3.54, -3.2, -2.8, -2.1, -1.6, -1.4, -1.06666, -1.06666, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 1.06666, 1.06666, 1.4, 1.4, 1.4, 1.6, 1.6, 1.6, 1.6, 2.1, 2.1, 2.1, 2.1, 2.1, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 3.2, 3.2, 3.2, 3.2, 3.2, 3.2, 3.54, 3.54, 3.54, 4.8, 4.8, 6.4, 8, 8, 8];
+                screen_durations = [1500, 1000, 1500, 1500, 1000, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers.slice(0,51));
+                trial_order = add_extreme_trials(trial_order, 3, 10);
+            } else if(conditions[cond].distribution == 'Negative'){
+                dist = [3.54, 3.2, 2.8, 2.1, 1.6, 1.4, 1.06666, 1.06666, 0.7, 0.7, 0.7, 0, 0, 0, 0, -0.7, -0.7, -0.7, -0.7, -1.06666, -1.06666, -1.4, -1.4, -1.4, -1.6, -1.6, -1.6, -1.6, -2.1, -2.1, -2.1, -2.1, -2.1, -2.8, -2.8, -2.8, -2.8, -2.8, -2.8, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.54, -3.54, -3.54, -4.8, -4.8, -6.4, -8, -8, -8];
+                screen_durations = [1500, 1000, 1500, 1500, 1000, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers.slice(0,51));
+                trial_order = add_extreme_trials(trial_order, 3, 10);
+            } else {
+                dist = [-6.4, -4.8, -3.54, -3.54, -3.2, -2.8, -2.1, -2.1, -2.1, -1.6, -1.6, -1.6, -1.4, -1.4, -1.4, -1.4, -1.06666,-1.06666, -0.7, -0.7, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 0.7, 1.06666, 1.06666, 1.4, 1.4, 1.4, 1.4, 1.6, 1.6, 1.6, 2.1, 2.1, 2.1, 2.8, 3.2, 3.54, 3.54, 4.8, 6.4];
+                screen_durations = [1000, 1000, 1500, 1500, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1000, 1000, 1500, 1500, 1500, 1500, 1000, 1500, 1500, 1000, 1000];
+                extreme_trials = [false, false, false, false, false, false, false, false, false, false, false, false, false,false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
+                trial_order = jsPsych.randomization.shuffle(trial_numbers);
+            }
+        } else if(conditions[cond].number_of_trials == 4){
+            trial_numbers =  [0, 1, 2, 3];
+            trial_order = jsPsych.randomization.shuffle(trial_numbers);
+            if(conditions[cond].distribution == 'Positive'){
+                dist = [-1.6, -1.4, 3.54, 8];
+                screen_durations = [1000, 1500, 1500, 1000];
+                extreme_trials = [false, false, false, true];
+            } else if(conditions[cond].distribution == 'Negative'){
+                dist = [1.6, 1.4, -3.54, -8];
+                screen_durations = [1000, 1500, 1500, 1000];
+                extreme_trials = [false, false, false, true];
+            } else {
+                dist = [-3.2, -2.8, 2.8, 3.2];
+                screen_durations = [1500, 1000, 1000, 1500];
+                extreme_trials = [false, false, false, false];
+            }
+        }
+        var directions;
+        var colour;
+        var shapes;
+        if(conditions[cond].direction.length>1){
+            directions = new Array(Math.ceil(trial_numbers.length/conditions[cond].direction.length)).fill(conditions[cond].direction).flat();
+            colours = new Array(trial_numbers.length).fill(conditions[cond].colour[0]);
+            shapes = new Array(trial_numbers.length).fill(conditions[cond].shape[0]);
+        } else if(conditions[cond].colour.length>1){
+            colours = new Array(Math.ceil(trial_numbers.length/conditions[cond].colour.length)).fill(conditions[cond].colour).flat();
+            directions = new Array(trial_numbers.length).fill(directions[cond].colour[0]);
+            shapes = new Array(trial_numbers.length).fill(conditions[cond].shape[0]);
+        } else if(conditions[cond].shape.length>1){
+            //Make all shapes conditions[cond].shape[group]
+            shapes = new Array(Math.ceil(trial_numbers.length/conditions[cond].shape.length)).fill(conditions[cond].shape).flat();
+            colours = new Array(trial_numbers.length).fill(conditions[cond].colour[0]);
+            directions = new Array(trial_numbers.length).fill(conditions[cond].directions[0]);
+        }
+        for(var trial = 0; trial<trial_order.length; trial++){
+            condition.push({
+                acceleration: dist[trial_order[trial]],
+                screen_duration: screen_durations[trial_order[trial]],
+                extreme: extreme_trials[trial_order[trial]],
+                direction: directions[trial_order[trial]],
+                colour: colours[trial_order[trial]],
+                shape: shapes[trial_order[trial]],
+                practice: conditions[cond].practice,
+                cue: conditions[cond].cue,
+                cue_colour: conditions[cond].cue_colour,
+                cue_shape: conditions[cond].cue_shape
+            });   
+        }
+        cond_trials.push(condition);
+    }
+    
+    var group_number = 0;
+    var t;
+    for(t = 0; t<total_trial_count.reduce((x, a) => x + a, 0); t++){
+        var condition_selector = Math.random();
+        var accumulated_prop = 0;
+        for(var c = 0; c<condition_groups[group_number].length; c++){
+            var this_condition = condition_groups[group_number][c];
+            var prop_this_cond_left_in_total = (conditions[c].number_of_trials-cond_counter[c])/(total_trial_count[group_number]-group_trial_count[group_number]);
+            accumulated_prop = accumulated_prop + prop_this_cond_left_in_total;
+            if(condition_selector<=accumulated_prop){
+                trial_variables.push(cond_trials[this_condition][cond_counter[this_condition]]);
+                cond_counter[this_condition] = cond_counter[this_condition] + 1;
+                break;
+            }
+        }
+        group_trial_count[group_number]++;
+        group_number++;
+        if(group_number>max_group_number){
+            group_number = 0;
+        }
+    }    
+    return trial_variables;
+}
+
+function setup_background_rotation(miniblock_length, alternation){
+    var trial_variables = [];
+    var tv = [];
+    var count = [];
+    var limit = [];
+    var orientations = jsPsych.randomization.shuffle([90, 270]);
+    var planes = jsPsych.randomization.shuffle([0, 90]);
+    for(var ori = 0; ori<orientations.length; ori++){
+        var ori_tvs = [];
+        var ori_count = [];
+        var ori_limit = [];
+        for(var pla = 0; pla<planes.length; pla++){
+            var plane_tvs = [];
+            var directions;
+            if(planes[pla] == 0){
+                directions = ["LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "LEFT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT", "RIGHT"];
+            } else {
+                directions = ["UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "UP", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN", "DOWN"];
+            }
+            var trial_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55];
+            var acc = [-4.8, -3.54, -3.2, -2.1, -1.6, -1.6, -1.4, -1.4, -1.06666, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0.7, 0.7, 0.7, 1.06666, 1.4, 1.4, 1.6, 1.6, 2.1, 3.2, 3.54, 4.8, -4.8, -3.54, -3.2, -2.1, -1.6, -1.6, -1.4, -1.4, -1.06666, -0.7, -0.7, -0.7, 0, 0, 0, 0, 0.7, 0.7, 0.7, 1.06666, 1.4, 1.4, 1.6, 1.6, 2.1, 3.2, 3.54, 4.8];
+            var screen_durations = [1000, 1500, 1000, 1500, 1000, 1000, 1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1500, 1500, 1000, 1000, 1500, 1000, 1500, 1000, 1000, 1500, 1000, 1500, 1000, 1000, 1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1000, 1000, 1500, 1500, 1500, 1000, 1500, 1500, 1000, 1000, 1500, 1000, 1500, 1000];
+            var trial_order = jsPsych.randomization.shuffle(trial_numbers);
+            for(var trial = 0; trial<trial_order.length; trial++){
+                plane_tvs.push({
+                    acceleration: acc[trial_order[trial]],
+                    screen_duration: screen_durations[trial_order[trial]],
+                    direction: directions[trial_order[trial]],
+                    background_orientation: orientations[ori],
+                    practice: false
+                })
+            }
+            ori_tvs.push(plane_tvs);
+            ori_count.push(0);
+            ori_limit.push(plane_tvs.length);
+        }
+        tv.push(ori_tvs);
+        count.push(ori_count);
+        limit.push(ori_limit)
+    }
+    if(alternation){
+        var o = 0;
+        var p = 0;
+        for(var trial = 0; trial<224; trial++){
+            //Loop the weird bit where there might be trials at the end to find the remaining trials
+            var orig_plane = p;
+            var orig_orientation = o;
+            while(count[o][p]>=limit[o][p]){
+                //If this plane and orientation has reached the limit, loop the planes to make up the numbers
+                p++;
+                if(p>=planes.length){
+                    p=0;
+                }
+                //When we have looped all planes, we need to loop the orientations
+                if(p == orig_plane){
+                    o++;
+                    if(o>=orientations.length){
+                        o = 0;
+                    }
+                    if(o == orig_orientation){ //We are fucked return what we have and hope for the best
+                        return trial_variables;
+                    }
+                }
+            }
+            trial_variables.push(tv[o][p][count[o][p]])
+            count[o][p]++;
+    
+            //Every loop plane switches
+            p++;
+            if(p>=planes.length){
+                p = 0;
+            }
+            if(trial%miniblock_length == miniblock_length-1){
+                //switch background orientation
+                o++;
+                if(o>=orientations.length){
+                    o = 0;
+                }
+            }
+        }
+    } else {
+        // Concatenate planes
+        var concat_tvs = [];
+        var count = [];
+        for(var o = 0; o<orientations.length; o++){
+            concat_tvs.push([]);
+            count.push(0);
+            for(var p = 0; p<planes.length; p++){
+                concat_tvs[o] = concat_tvs[o].concat(tv[o][p])
+            }
+            concat_tvs[o] = jsPsych.randomization.shuffle(concat_tvs[o]);
+        }
+        var o = 0;
+        for(var trial = 0; trial<224; trial++){
+            var orig_ori = o;
+            while(count[o]>=concat_tvs[o].length){
+                // If we have gone over the number of trials in this orientation, we switch orientations
+                o++;
+                if(o>=orientations.length){
+                    o = 0;
+                }
+                if(o == orig_orientation){ //We are fucked return what we have and hope for the best
+                    return trial_variables;
+                }
+            }
+            trial_variables.push(concat_tvs[o][count[o]])
+            count[o]++;
+            if(trial%miniblock_length == miniblock_length-1){
+                //switch background orientation
+                o++;
+                if(o>=orientations.length){
+                    o = 0;
+                }
+            }
+        }
+    }
+    
+    return trial_variables;
+}
+
+function setup_background_rotation_no_alternation_practice(){
+    var trial_variables = [];
+    trial_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    var directions = ["UP", "UP", "UP", "UP", "DOWN", "DOWN", "DOWN", "DOWN", "LEFT", "LEFT", "LEFT", "LEFT", "RIGHT", "RIGHT", "RIGHT", "RIGHT"];
+    var acc = [-3.2, -2.1, 2.1, 3.2, -3.2, -2.1, 2.1, 3.2, -3.2, -2.1, 2.1, 3.2, -3.2, -2.1, 2.1, 3.2];
+    var screen_durations = [1000, 1500, 1500, 1000, 1000, 1500, 1500, 1000, 1000, 1500, 1500, 1000, 1000, 1500, 1500, 1000];
+    var trial_order = jsPsych.randomization.shuffle(trial_numbers);
+    for(var trial = 0; trial<trial_order.length; trial++){
+        trial_variables.push({
+            acceleration: acc[trial_order[trial]],
+            screen_duration: screen_durations[trial_order[trial]],
+            direction: directions[trial_order[trial]],
+            background_orientation: 0,
+            practice: true
+        })
+    }
+    return trial_variables;
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jatos.js"></script>
+    <script src="jspsych/jspsych.js"></script>    
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-survey-text.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />    
+  </head>
+<body></body>
+<script>
+    var subject_id;
+    const jsPsych = initJsPsych({        
+        on_finish: function(){           
+            //Puts data as csv on Jatos
+            resultCSV = jsPsych.data.get().csv();
+            jatos.endStudy(resultCSV);
+        }
+    })        
+
+    //Debrief form shown at the end of the experiment 
+    var debrief = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+                    <p class = 'instructions'>Thank you for taking part in this study. We will now further explain the study's purpose.  Our contact details are below if you wish to contact us.</p>
+                    <div class = 'information'>
+                        <p>Further information about the study.<br>
+                            When balls travel at a constant speed, people often perceive upward moving balls to be accelerating and downward moving balls to be decelerating.<br>
+                            In this study we are interested in whether people's reported locations mimic this finding, indicating that acceleration perception is skewed due to errors in location perception.
+                        </p>
+
+                        <p>Further information about the research.<br>
+                        In order to accurately perceive the world around us, it is thought that expectations can alter our perceptions. We are interested in the types of alterations caused by expected and surprising events, and the techniques we use to improve our perception or improve our ability to learn new expectations.<br>
+                        We measured both the responses you made, and the time it took you to push the key, as a measure of difficulty (more difficulty is indicated by more mistakes and slower responses). Sometimes, you may have noticed that unexpected events occur, and in those cases, we are interested in how people react differently compared to the expected events. We hope that studies like these will help us to better understand human perception.</p>
+                        <p>How did I contribute to the research project?<br>
+                            Without your time and willingness to report on your private experiences, we would not be able to run the current research. Researchers rely on dedicated individuals like yourself to participate in research in order to learn something that will hopefully benefit everyone.<br>
+                            You are also welcome to get in touch with us to ask further questions at the details below.  Your contact details will not be associated with the data you have provided from the study today.</p>
+                        
+                        <p>Principal investigator: Prof. Clare Press <br>
+                            Contact email: c.press@ucl.ac.uk <br>
+                            Co-investigator: Nick Simpson <br>
+                            Contact email: nicholas.simpson.23@ucl.ac.uk <br>
+
+                        <p>This study "Interactions between action, perception, and learning" has been approved by the Research Department of Experimental Psychology Ethics Chair, with project ID number: EP_2024_002.</p>
+                </div>`,
+        choices: ['Continue'],  
+        data: {
+            test_type: 'debrief',
+            subject_id: function(){return subject_id}
+        }              
+    }
+
+    var feedback = {
+        type: jsPsychSurveyText,
+        preamble: 'Thank you for completing the experiment. Please take a moment to answer the following questions.',
+        questions: [
+            {prompt: "What do you think this experiment is about?", rows: 5, columns: 80},
+            {prompt: "Did you notice any differences in the ball motion or your own response depending on whether the ball moved upward or downward?", rows: 5, columns: 80},
+            {prompt: "Do you have any feedback for us to improve the participant experience or experimental procedure?", rows: 5, columns: 80},
+        ],        
+        data: {
+            test_type: 'feedback',
+            subject_id: function(){return subject_id}
+        }      
+    }
+    
+    var thank_you = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p style="text-align:left">Thank you for completing the study!</p>
+        <p style="text-align:left">We greatly appreciate the time you have spent doing this experiment.</p>
+        <p style="text-align:left">We have a couple of short feedback questions.</p>
+        <p style="text-align:left">Press continue to advance to a feedback form followed by a debrief and completion screens.</p>              
+        `,
+        choices: ['Continue'],                    
+    }
+
+    //Put it all into an experiment
+    jatos.onLoad(() => {           
+        subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+        jatos.addAbortButton();                
+        jsPsych.run([thank_you, feedback, debrief]);        
+    });        
+
+</script>
+
+</html>

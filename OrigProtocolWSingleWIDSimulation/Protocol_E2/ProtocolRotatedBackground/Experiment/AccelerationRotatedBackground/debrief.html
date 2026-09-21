@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jatos.js"></script>
+    <script src="jspsych/jspsych.js"></script>    
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-survey-text.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />    
+  </head>
+<body></body>
+<script>
+    var subject_id;
+    const jsPsych = initJsPsych({        
+        on_finish: function(){           
+            //Puts data as csv on Jatos
+            resultCSV = jsPsych.data.get().csv();
+            jatos.endStudy(resultCSV);
+        }
+    })        
+
+    //Debrief form shown at the end of the experiment 
+    var debrief = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function(){
+            var vertical_text = "Error.";
+            var horizontal_text = "Error.";
+            if(jatos.studySessionData.vertical_bias == 1){
+                vertical_text = "Relative to your head - you reported downward motion as <b>more</b> accelerating than upward motion."
+            } else if(jatos.studySessionData.vertical_bias == -1){
+                vertical_text = "Relative to your head - you reported downward motion as <b>less</b> accelerating than upward motion."
+            } else if(jatos.studySessionData.vertical_bias == 0){
+                vertical_text = "Relative to your head - you reported downward motion as <b>equally</b> accelerating as upward motion."
+            }
+            if(jatos.studySessionData.horizontal_bias == 1){
+                horizontal_text = "Relative to the background - you reported downward motion as <b>more</b> accelerating than upward motion."
+            } else if(jatos.studySessionData.horizontal_bias == -1){
+                horizontal_text = "Relative to the background - you reported downward motion as <b>less</b> accelerating than upward motion."
+            } else if(jatos.studySessionData.horizontal_bias == 0){
+                horizontal_text = "Relative to the background - you reported downward motion as <b>equally</b> accelerating as upward motion."
+            }
+            return `
+                <p style="text-align:left">Thank you for participating in this study.</p>           
+                <p style="text-align:left">We are interested in how people are able to form and use expectations about the world.</p>
+                <p style="text-align:left">It has been shown before that people see downward moving objects as <b>less</b> accelerating than upward moving objects.</p>
+                <p style="text-align:left">This study is aiming to understand if that effect is due to ball motion relative to the participant's head or relative to the background.</p>
+                <p style="text-align:left">For example, a quick analysis of your own results shows:</p>
+                <p style="text-align:left">`+vertical_text+`</p>
+                <p style="text-align:left">`+horizontal_text+`</p>
+                <p style="text-align:left">These effects are very small and will not affect your daily life, but understanding how the general population behaves can help our understanding of certain disorders.</p>
+                <p style="text-align:left; font-size: 20px">If you have any additional questions or concerns, please contact Nick Simpson: nsimps02@student.bbk.ac.uk or Matan Mazor: mtnmzor@gmail.com .</p>
+                <p style="text-align:left; font-size: 20px">For information about Birkbeck's data protection policy please visit: http://www.bbk.ac.uk/about-us/policies/privacy#7 </p>
+                <p style="text-align:left; font-size: 20px">If you have concerns about this study, please contact the School's Ethics Officer at: ethics@psychology.bbk.ac.uk </p>
+                <p style="text-align:left; font-size: 20px">You also have the right to submit a complaint to the Information Commissioner's Office: https://ico.org.uk/ </p>
+                <p style="text-align:left">By pressing continue you will be directed to a completion screen and your responses saved.</p>`
+        },
+        choices: ['Continue'],  
+        data: {
+            test_type: 'debrief',
+            subject_id: function(){return subject_id}
+        }              
+    }
+
+    var feedback = {
+        type: jsPsychSurveyText,
+        preamble: 'Thank you for completing the experiment. Please take a moment to answer the following questions.',
+        questions: [
+            {prompt: "What do you think this experiment is about?", rows: 5},
+            {prompt: "Do you think the different backgrounds changed how you responded at all?", rows: 5},
+            {prompt: "Do you have any feedback for us to improve the participant experience or experimental procedure?", rows: 5},
+        ],        
+        data: {
+            test_type: 'feedback',
+            subject_id: function(){return subject_id}
+        }      
+    }
+    
+    var thank_you = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p style="text-align:left">Thank you for completing the study!</p>
+        <p style="text-align:left">We greatly appreciate the time you have spent doing this experiment.</p>
+        <p style="text-align:left">We have a couple of short feedback questions.</p>
+        <p style="text-align:left">Press continue to advance to a feedback form followed by a debrief and completion screens.</p>              
+        `,
+        choices: ['Continue'],                    
+    }
+
+    //Put it all into an experiment
+    jatos.onLoad(() => {           
+        subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+        jatos.addAbortButton();                
+        jsPsych.run([thank_you, feedback, debrief]);        
+    });        
+
+</script>
+
+</html>

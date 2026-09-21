@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="setup.html"></script>
+    <script src="jspsych/mersenne-twister.js"></script>
+    <script src="jspsych/plugin-survey-text.js"></script>
+    <script src="jspsych/plugin-moving-image.js"></script>
+    <script src="jspsych/plugin-fullscreen.js"></script>
+    <script src="jspsych/plugin-html-keyboard-response.js"></script>              
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>  
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />    
+  </head>
+<body></body>
+<script>
+    var subject_id;
+    var study_id;
+    var session_id;  
+    
+    const jsPsych = initJsPsych({        
+        on_finish: function(){
+            //Puts data as csv on Jatos 
+            resultCSV = jsPsych.data.get().csv();        
+            //jatos.submitResultData(resultCSV, jatos.startNextComponent);          
+        }
+    });
+
+    //Used in pseudorandomisation procedure
+    function hexToBytes(hex) {
+        for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+        return bytes;
+    };
+
+    // Added code to input the SHA256 key and a subject identifier
+    // Moved mesenne twister initialisation here
+    // Added makeTimeline in on_finish to take user input
+    var m = new MersenneTwister();
+    Math.random = function() {return m.random()};
+    var protocol_sum;
+    var details_input = {
+        type: jsPsychSurveyText,
+        questions: [
+            {name: 'SHAkey', prompt: 'Enter the SHA256 Key (Suggested: 3ce3fbf6a9682cf58314ebc2d661d086e83ee05330a37e2fe423acad8b1d95b2).', required: true, columns: 70},
+            {name: 'WID', prompt: 'Enter a subject identifier (e.g. 431432).', required: true, columns: 70}
+        ],
+        on_finish: function(data) {
+            protocol_sum = data.response.SHAkey;
+            subject_identifier = data.response.WID;
+
+            subject_sum = hexToBytes(
+            CryptoJS.SHA256(
+                protocol_sum+subject_identifier).toString()
+            );
+            m.init_by_array(subject_sum, subject_sum.length);
+            jsPsych.data.addProperties({'protocol_sum':protocol_sum,
+                'subject_identifier':subject_identifier, 'subject_sum':subject_sum});
+
+            jsPsych.addNodeToEndOfTimeline({ timeline: makeTimeline() });
+        }
+    }
+
+    jsPsych.run([details_input]);
+
+    function makeTimeline(){
+        //Variables for number of practices and trials and the variables used
+        var number_of_practices = 16;
+        var number_of_blocks = 8;
+        var number_of_trials = 28;
+        var practice_number = 0;
+        var trial_number = 0;
+        var block_number = 0;
+        var image_size = 0.1; //As a proportion of the screen size
+        var start_time = 1000;//In ms    
+        var virtual_space_distance = 4; //In meters
+        var miniblock_length = 28;
+        var alternation = false;
+        var practice_variables = setup_background_rotation_no_alternation_practice();
+        var trial_variables = setup_background_rotation(miniblock_length, alternation);
+        
+        //Enter fullscreen so everything is displayed well
+        var enter_fullscreen = {
+            type: jsPsychFullscreen,
+            fullscreen_mode: true,
+            message: `<p style="text-align:left;">Please turn your screen brightness to full if you can.</p>
+            <p style="text-align:left;">Press continue to enter full screen and start the real experiment.</p>
+            <p style="text-align:left;">Please keep full screen mode on throughout.</p>
+            <p></p>
+            `,
+            delay: 1000
+        }
+        
+        //Instructions screen shown at the beginning of the experiment
+        var instructions = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `
+            <p style="text-align:left;">In this study you will see a ball travelling across the screen.</p>
+            <p style="text-align:left;">The ball will be either accelerating (getting faster) or decelerating (getting slower).</p>
+            <p style="text-align:left;">Your task is to decide whether the ball is accelerating or decelerating.</p>
+            <p style="text-align:left;">If the ball is accelerating press the A key.</p>
+            <p style="text-align:left;">If the ball is decelerating press the D key.</p>
+            <p style="text-align:left;">You can only respond once the ball has left the screen.</p>
+            <p style="text-align:left;">You will now have an opportunity to practise, we will give you `+number_of_practices+` trials and tell you if you are correct.</p>
+            <p style="text-align:left;">Press the A key to start practising.</p>
+            `,
+            choices: ['a'],
+            on_finish: function(data){                        
+                resultCSV = jsPsych.data.get().csv();
+                //jatos.submitResultData(resultCSV);
+            }
+        }
+
+        //Instructions screen shown at the end of the practice, before the real study
+        var real_block = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `
+            <p style="text-align:left;">You are now ready to start the real experiment.</p>
+            <p style="text-align:left;">The task is exactly the same, however the background will now be rotated and you will not get any feedback.</p>
+            <p style="text-align:left;">We ask that you do <b>not</b> rotate your head. Try to keep it vertical.</p>
+            <p style="text-align:left;">Remember:</p>
+            <p style="text-align:left;">If the ball is accelerating press the A key.</p>
+            <p style="text-align:left;">If the ball is decelerating press the D key.</p>
+            <p style="text-align:left;">This study consists of `+number_of_blocks+` blocks of `+number_of_trials+` trials.</p>
+            <p style="text-align:left;">Press the A key to start.</p>
+            `,
+            choices: ['a']
+        }   
+
+        //Variable defining the practice trials
+        var practice_trials = {
+            type: jsPsychMovingImage,
+            image_ratio: image_size,
+            start_time: start_time,
+            moving_image: 'images/ball.png',
+            background: 'images/hoop.png',
+            background_rotation: function(){return practice_variables[practice_number].background_orientation},
+            //Next three use the parameters set up in practice_variables
+            screen_duration: function(){return practice_variables[practice_number].screen_duration;},
+            acceleration: function(){return practice_variables[practice_number].acceleration;},
+            direction: function(){return practice_variables[practice_number].direction;},
+            accelerating_key: 'a',
+            decelerating_key: 'd',
+            virtual_space_size: virtual_space_distance,        
+            trial_number: function(){return practice_number+1;},
+            total_number_of_trials: function(){return number_of_practices;},
+            feedback: function(){return true}, //Practice trials have feedback
+            on_finish: function(data){
+                //Saves useful data
+                data.practice = true;
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;                  
+            }
+        }
+
+        //Variable defining the real trials
+        var real_trials = {
+            type: jsPsychMovingImage,
+            image_ratio: image_size,
+            start_time: start_time,
+            moving_image: 'images/ball.png',
+            background: 'images/hoop.png',
+            background_rotation: function(){return trial_variables[trial_number+number_of_trials*block_number].background_orientation},
+            //Next three use the parameters set up in trial_variables
+            screen_duration: function(){return trial_variables[trial_number+number_of_trials*block_number].screen_duration;},
+            acceleration: function(){return trial_variables[trial_number+number_of_trials*block_number].acceleration;},
+            direction: function(){return trial_variables[trial_number+number_of_trials*block_number].direction;},
+            accelerating_key: 'a',
+            decelerating_key: 'd',
+            virtual_space_size: virtual_space_distance,        
+            trial_number: function(){return trial_number+1;},
+            total_number_of_trials: function(){return number_of_trials;},
+            feedback: function(){return false}, //No feedback on real trials
+            on_finish: function(data){
+                if((data.direction == "LEFT" && data.background_rotation == 270) || (data.direction == "RIGHT" && data.background_rotation == 90)){
+                    data.relative_motion = "PSEUDO_UP";
+                } else if((data.direction == "LEFT" && data.background_rotation == 90) || (data.direction == "RIGHT" && data.background_rotation == 270)){
+                    data.relative_motion = "PSEUDO_DOWN";
+                } else if(data.direction == "UP" || data.direction == "DOWN"){
+                    data.relative_motion = data.direction;
+                }
+                //Saves useful data
+                data.practice = false;
+                data.extreme = trial_variables[trial_number+number_of_trials*block_number].extreme; 
+                data.subject_id = subject_id;
+                data.study_id = study_id;
+                data.session_id = session_id;                  
+            }
+        }
+
+        //This is the loop for practice trials
+        var practice_procedure = {
+            timeline: [practice_trials], //We continually show the practice_trials trial
+            //The loop function will repeat the timeline if true is returned
+            loop_function(){
+                //Submit data on each trial to ensure no loss of data
+                resultCSV = jsPsych.data.get().csv();        
+                //jatos.submitResultData(resultCSV);
+                //Increase the practice number to keep track of how many trials have been shown and to ensure the correct parameters are shown
+                practice_number++;
+                if(practice_number<number_of_practices){                
+                    //If we haven't yet shown all practice trials, we loop again
+                    return true;
+                } else {      
+                    //If we have shown all practice trials, we stop loop      
+                    return false;
+                }
+            }
+        }
+
+        //This is the loop for practice trials, we repeat this loop every block
+        var procedure = {
+            timeline: [real_trials],//We continually show the real_trials trial
+            //The loop function will repeat the timeline if true is returned
+            loop_function(){
+                //Submit data on each trial to ensure no loss of data
+                resultCSV = jsPsych.data.get().csv();        
+                //jatos.submitResultData(resultCSV);
+                //Increase the trial number to keep track of how many trials have been shown and to ensure the correct parameters are shown
+                trial_number++;
+                if(trial_number<number_of_trials){
+                    //If we haven't yet shown all trials, we loop again        
+                    return true;
+                } else {
+                    //If we have shown all trials, we set trial_number to 0 for the beginning of the next block
+                    trial_number = 0;
+                    //If we have shown all trials, we stop loop
+                    return false;
+                }
+            }
+        }
+
+        //This is the instructions shown at the end of each block
+        const rest_block = {
+            type: jsPsychHtmlKeyboardResponse,        
+            stimulus: function(){  
+            if(block_number == number_of_blocks-1){
+                //If this is the final block, we don't need to show the rest block
+                return `<p style="text-align:left;">You have finished the experiment.</p>
+                <p style="text-align:left;">Press A to see your results.</p>`
+            } else {
+                //We show the number of blocks completed and left to go
+                return `<p style="text-align:left;">You have completed `+(block_number+1)+` blocks out of `+number_of_blocks+`.</p>
+                <p style="text-align:left;">Take a short break if you need and press A to continue.</p>` 
+            }
+        },                   
+            choices: ['a']
+        } 
+        
+        //This loops the block
+        var block_procedure = {
+            //We continually show the procedure that loops the trials in a block, then follow with the rest block at the end
+            timeline: [procedure, rest_block],
+            //The loop function will repeat the timeline if true is returned
+            loop_function(){
+                //We increase the block number to keep track of how many blocks have been presented and ensure that the correct parameters are shown
+                block_number++;
+                if(block_number<number_of_blocks){    
+                    //Continues the loop if there are more blocks to present            
+                    return true;
+                } else {
+                    //Stops the loop if we have completed the experiment
+                    return false;
+                }
+            }
+        }
+
+        //This shows the participant some simple stats about their performance at the end of the experiment
+        const resultsblock = {
+            type: jsPsychHtmlKeyboardResponse,        
+            stimulus: function(){
+            //Find how many trials they have done which aren't practice
+            var number_of_trials = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false}]).count();
+            //Find how many trials they have done which aren't practice and they got correct    
+            var correct_trials = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, correct: true}]).count();
+            //Find the reaction time from non-practice trials
+            var mean_rt = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false}]).select('rt_from_ball').mean();
+
+            var up_saying_acc = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "UP", key_response: "a"}]).count();
+            var up_saying_dec = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "UP", key_response: "d"}]).count();
+            var down_saying_acc = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "DOWN", key_response: "a"}]).count();
+            var down_saying_dec = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "DOWN", key_response: "d"}]).count();
+            var pseudo_up_saying_acc = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "PSEUDO_UP", key_response: "a"}]).count();
+            var pseudo_up_saying_dec = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "PSEUDO_UP", key_response: "d"}]).count();
+            var pseudo_down_saying_acc = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "PSEUDO_DOWN", key_response: "a"}]).count();
+            var pseudo_down_saying_dec = jsPsych.data.get().filter([{trial_type: 'moving-image', practice: false, relative_motion: "PSEUDO_DOWN", key_response: "d"}]).count();
+
+            var vertical_bias = (down_saying_acc/(down_saying_acc+down_saying_dec)) - (up_saying_acc/(up_saying_acc+up_saying_dec));
+            var horizontal_bias = (pseudo_down_saying_acc/(pseudo_down_saying_acc+pseudo_down_saying_dec)) - (pseudo_up_saying_acc/(pseudo_up_saying_acc+pseudo_up_saying_dec));
+
+            //jatos.studySessionData["vertical_bias"] = Math.sign(vertical_bias);
+            //jatos.studySessionData["horizontal_bias"] = Math.sign(horizontal_bias);
+
+            //Present the stats to the screen
+            return `
+            <p style="text-align:left;">Study complete.</p>
+
+            <p style="text-align:left;">You got `.concat(correct_trials, ' out of ', number_of_trials,` trials correct.</p>        
+
+            <p style="text-align:left;">Your mean reaction time was `, Math.round(mean_rt), `ms.</p>
+            
+            <p style="text-align:left;">Press A to continue.`);               
+        },                   
+            choices: ['a']       
+        } 
+
+        //The maketimeline function returns the following timeline
+        return [enter_fullscreen, instructions, practice_procedure, real_block, block_procedure, resultsblock];
+    }
+    
+
+    //jatos.onLoad(() => {      
+      //  jatos.addAbortButton();
+        //Extract the participant data from the url parameters (given by online study platform)
+        //subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+        //study_id = jatos.urlQueryParameters.STUDY_ID;
+        //session_id = jatos.urlQueryParameters.SESSION_ID;
+        //Setup the pseudorandomisation
+        //We use participant information and the preregistration document "protocol_sum" to prove that
+        // data collection occurs after preregistration and we can recreate each participant's study
+        //var m = new MersenneTwister();
+        //Math.random = function() {return m.random()};
+        //var protocol_sum = jatos.batchSession.get("protocol_sum");
+        //window.PROLIFIC_PID = jatos.urlQueryParameters.PROLIFIC_PID
+        //var subject_identifier = jatos.workerId;
+        //subject_sum = hexToBytes(
+        //CryptoJS.SHA256(
+        //    protocol_sum+subject_identifier).toString()
+        //);
+        //m.init_by_array(subject_sum, subject_sum.length);
+        //jsPsych.data.addProperties({'protocol_sum':protocol_sum,
+        //    'subject_identifier':subject_identifier, 'subject_sum':subject_sum});
+        //Make timeline runs the code to setup the timeline after the randomisation has been seeded
+        //var timeline=makeTimeline();     
+        //jsPsych.run(timeline);
+    //});        
+
+</script>
+
+</html>

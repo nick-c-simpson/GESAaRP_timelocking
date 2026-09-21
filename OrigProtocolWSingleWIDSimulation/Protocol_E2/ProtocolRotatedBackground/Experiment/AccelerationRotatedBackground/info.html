@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jatos.js"></script>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-survey-html-form.js"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />  
+  </head>
+<body></body>
+<script>    
+
+    var subject_id;
+    var study_id;
+    var session_id;    
+    var consent_approved = 0;    
+
+    const jsPsych = initJsPsych({        
+        on_finish: function(){           
+            //Puts data as csv on Jatos 
+            resultCSV = jsPsych.data.get().csv(); 
+            jatos.submitResultData(resultCSV, jatos.startNextComponent);                   
+        }
+    })
+
+    function setup(){
+        // Capture info from Prolific
+        var params = jatos.urlQueryParameters
+        subject_id = jatos.urlQueryParameters.PROLIFIC_PID;
+        study_id = jatos.urlQueryParameters.STUDY_ID;
+        session_id = jatos.urlQueryParameters.SESSION_ID;        
+    }
+
+
+    //Html form with checkbox to allow participant to give consent to partaking
+    const instruction = {
+        type: jsPsychSurveyHtmlForm,
+        preamble: `<p style="text-align:left">Hello, this study is looking into our ability to judge acceleration.</p>
+        <p style="text-align:left">You will need to watch the screen and decide if the object is accelerating or decelerating.</p>
+        <p style="text-align:left">You will need to respond using keys on your keyboard.</p>
+        <p style="text-align:left">We will be recording your answers and reaction times.</p>
+        <p style="text-align:left">If you wish to stop taking part you can simply close the study. If you later decide you wish to be removed you can contact us.</p>
+        <p style="text-align:left">If you would like more information, please message on Prolific or email Nick: nsimps02@student.bbk.ac.uk and Matan: mtnmzor@gmail.com</p>`,
+        html: `<input type="checkbox" id="consent" name="consent">
+        <label for="consent"> I have read and agreed to the above information.</label><br>`,
+        data: {
+            test_type: 'instruction_sheet',
+        },          
+        //Once continue is pressed, the consent variable can be changed to 1 if the response is on (box checked)
+        on_finish: function(data){
+            data.subject_id = subject_id;
+            data.study_id = study_id;
+            data.session_id = session_id;  
+            if(data.response.consent=="on"){
+                consent_approved = 1;
+                //Response is checked but data correct being true is another way we can confirm the box was ticked
+                data.correct = true;                           
+            }            
+        }    
+    }
+
+    //This forms a loop such that we won't leave the consent page until the box has been checked at the time of pressing continue
+    var instruction_procedure = {
+        timeline: [instruction],
+        loop_function: function(data){            
+            if (!consent_approved){
+                return true
+            } else {
+                return false
+            }
+        }        
+    }
+
+    //Put it all into an experiment
+    jatos.onLoad(() => {
+        setup();  
+        jatos.addAbortButton();
+        jsPsych.run([instruction_procedure]);
+    });        
+
+</script>
+
+</html>
