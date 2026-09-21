@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="setup.js"></script>
+    <script src="jspsych/mersenne-twister.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Open%20Sans:400,600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/jquery/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/survey-core@3.1.0/survey.core.min.js"></script>
+    <script src="https://unpkg.com/survey-core@3.1.0/survey.i18n.min.js"></script>
+    <script src="https://unpkg.com/survey-core@3.1.0/themes/index.min.js"></script>
+    <script src="https://unpkg.com/survey-js-ui@3.1.0/survey-js-ui.min.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey@2"></script>
+    <link rel="stylesheet" href="https://unpkg.com/survey-core@3.1.0/survey-core.min.css" />
+    <link rel="stylesheet" href ="./index.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>  
+    <style>
+        .sd-question {
+            margin-bottom: 40px;
+        }
+    </style>
+
+  </head>
+<body><div id="surveyElement" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; min-height: 100%; height:100%"></div></body>
+<script>
+
+    //Variables for number of practices and trials and the variables used
+    var all_trial_data = [];
+
+    const jsPsych = initJsPsych({        
+        on_finish: function(){
+            //Puts data as csv on Jatos 
+            resultCSV = jsPsych.data.get().csv();        
+            //jatos.submitResultData(resultCSV, jatos.startNextComponent);          
+        }
+    });
+
+    //Used in pseudorandomisation procedure
+    function hexToBytes(hex) {
+        for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+        return bytes;
+    };
+
+    function arrayToCSV(dataArray) {
+        if (!dataArray || dataArray.length === 0) return '';
+ 
+        var headerSet = {};
+        dataArray.forEach(function(row) {
+            Object.keys(row).forEach(function(key) { headerSet[key] = true; });
+        });
+        var headers = Object.keys(headerSet);
+ 
+        var csvRows = [headers.join(',')];
+ 
+        dataArray.forEach(function(row) {
+            var values = headers.map(function(header) {
+                var val = row[header];
+                if (val === undefined || val === null) val = '';
+                if (typeof val === 'object') val = JSON.stringify(val);
+                val = String(val).replace(/"/g, '""');
+                if (val.search(/("|,|\n)/g) >= 0) val = '"' + val + '"';
+                return val;
+            });
+            csvRows.push(values.join(','));
+        });
+ 
+        return csvRows.join('\n');
+    }
+ 
+    function downloadCSV(dataArray, filename) {
+        var csvContent = arrayToCSV(dataArray);
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename || 'data.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+
+    var m = new MersenneTwister();
+    Math.random = function() {return m.random()};
+    var protocol_sum;
+
+    var wid_file_data;
+
+    var details_input = {
+        type: jsPsychSurvey,
+        survey_json: {
+            completeText: 'Continue and Download',
+            pages: [
+                {
+                    elements: [
+                        {
+                            type: 'text',
+                            title: 'Enter the SHA256 Key (Suggested: 1eb790ef60490abcfad75adea5f0c5bb57efe5127077b1f397772025d94f2b3f).',
+                            name: 'SHAkey',
+                            isRequired: true,
+                            columns: 70
+                        },
+                        {
+                            type: 'file',
+                            title: 'Select the WID JSON file (Suggested: Exp3Rep.json).',
+                            name: 'WID',
+                            isRequired: true,
+                            acceptedTypes: '.json',
+                            storeDataAsText: true
+                        }
+                    ]
+                }
+            ]
+        },
+        on_finish: function(data) {
+            protocol_sum = data.response.SHAkey;
+
+            var fileObj = data.response.WID[0];
+            var base64Content = fileObj.content.split(',')[1];
+            var jsonText = atob(base64Content);
+            wid_file_data = JSON.parse(jsonText);
+            
+            // For every value in wid_file list
+            for(var i = 0; i < wid_file_data.length; i++){
+                var subject_identifier = wid_file_data[i];
+                // Initialise the twister
+                //Undefined added to end of string as window.part was included accidentally (as the batch session "part" was not defined all Ps had undefined)
+                subject_sum = hexToBytes(
+                    CryptoJS.SHA256(
+                        protocol_sum+subject_identifier+'undefined').toString()
+                );
+                m.init_by_array(subject_sum, subject_sum.length);
+                // Make trials
+
+                var practice_variables_flash = flash_setup_vertical(true);
+                var trial_variables_flash = flash_setup_vertical(false);
+
+                practice_variables_flash.forEach(function(trial, index) {
+                    trial.subject_identifier = subject_identifier;
+                    trial.practice = true;
+                    trial.trial_number = index + 1;
+                });
+                trial_variables_flash.forEach(function(trial, index) {
+                    trial.subject_identifier = subject_identifier;
+                    trial.practice = false;
+                    trial.trial_number = index + 1;
+                });
+
+                all_trial_data = all_trial_data.concat(practice_variables_flash, trial_variables_flash);
+            }
+
+            downloadCSV(all_trial_data, 'Exp3Rep_trial_data.csv');
+        }
+    };
+
+    jsPsych.run([details_input]);
+
+</script>
+
+</html>
