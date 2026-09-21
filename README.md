@@ -77,3 +77,32 @@ Open and run the R script `CompareRealAndGenerated.R`. If the previous steps hav
 ## What happens when the SHA256 key is not correct?
 
 Feel free to change the SHA256 key entered into the .html files and see that many trials are now incorrect. This shows that it is exceedingly unlikely that the specific set of trials could be recreated if the pre-registration had been changed after data collection.
+
+# Individual participant simulation
+
+To make the above process more streamlined, much of the experiment code has been changed. However, minimal changes have been made to the experiment scripts such that an individual subject identifier or WID can be input with the SHA256 key and the experiment will run as the specific participant would have experienced. These folders are mostly identical to the zipped folders found in `ProtocolZips` but have been edited so cannot be used to generate the SHA256 keys.
+
+The files have removed any relation to JATOS (the online service used to run the experiment) and have added user input for the SHA256 key and a specific WID. The WID can be taken from the real data or from the WidFiles. 
+
+These files are found in:
+
+Experiment 2 - `OrigProtocolWSingleWIDSimulation/Protocol_E2/ProtocolRotatedBackground/Experiment/AccelerationRotatedBackground/real_jatos_removed.html`.
+Experiment 3 Replication - `OrigProtocolWSingleWIDSimulation/Protocol_E3_Rep/Protocol/ExperimentScript/FilesFromJZIP/ReproductionReplication010425/experiment_jatos_r.html`.
+
+## Experiment scripts for Experiment 3 Replication
+
+The zipped protocol folder for Experiment 3 Replication only includes a .jzip for the experiment code. This is a JATOS folder that includes the experiment script that was run. To retrieve the experiment scripts that are shown in `FilesFromJZIP`, users can make a JATOS account and import the included .jzip file. In the local usage of JATOS, the scripts will be found in `study_assets_root/ReproductionReplication010425`. The .jzip folder still contains the necessary information to run the experiment script, but is not as easily accessible as the other experiments. 
+
+### Make a JATOS account
+
+Follow the instructions for download on the JATOS website: https://www.jatos.org/ or the installation guide: https://www.jatos.org/Installation.
+
+### Import the Experiment 3 .jzip file
+
+Follow this guide but select the .jzip found at `OrigProtocolWSingleWIDSimulation/Protocol_E3_Rep/Protocol/ExperimentScript/reproductionreplication010425.jzip`:
+https://www.jatos.org/Get-started
+
+### Find the files
+
+In your local JATOS folder, the experiment scripts should be found in the folder `study_assets_root/ReproductionReplication010425`.
+
