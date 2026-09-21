@@ -4,7 +4,7 @@ A method for ensuring time-locked preregistation for the data in Experiments 2 a
 # Logic
 SHA256 keys are a cryptographic hash function which reads the bytes of a file and applies the SHA256 algorithm to generate a 64 digit key. This key can be used to check that the file has not been edited because the key is derived from the data within the file itself.
 
-Here we use the SHA256 key from a zipped folder which contains within it the experiment script and the pre-registration document. This SHA256 key can therefore not be generated until the pre-registration is written and the expreiment code is written.
+Here we use the SHA256 key from a zipped folder which contains within it the experiment script and the pre-registration document. This SHA256 key can therefore not be generated until the pre-registration is written and the experiment code is written.
 
 The SHA256 key is used to seed a random number generator (RNG) which is used to generate the trial order of the participants within the experiment. Specifically, the SHA256 key + the worker ID (a unique ID given to participants when using the JATOS online experiment platform) seeds the RNG so that each participant has a unique trial order that is still tied to the SHA256 key.
 
@@ -64,7 +64,7 @@ Opening these files should take you to a local html that allows you to select a 
 
 The SHA256 key should be simply copied and pasted into the text input and the matching .json folder created in the folder `WidFiles` selected with the file selector. It might be easier to select the file first.
 
-This html file should open the .json file and extract the subject identifiers that have been taken from the real data. For each of the subject identifiers, it sets the RNG seed with the SHA256 key and the subject identifier and runs the same process to generate the trial order. It saves a .csv file to your downloads with all of the trials for all subject identifiers. Once downloaded, this tab can be closed.
+This html file should open the .json file and extract the subject identifiers that have been taken from the real data. For each of the subject identifiers, it sets the RNG seed with the SHA256 key and the subject identifier and runs the same process that is used in the experiment scripts to generate the trial order. It saves a .csv file to your downloads with all of the trials for all subject identifiers. Once downloaded, this tab can be closed.
 
 To keep the provided files working, move the downloaded .csv file to the folder `GeneratedTrials` and make sure the name is like `ExpX_trial_data.csv`. Otherwise, the file paths in the following step may need to be manually changed.
 
@@ -87,7 +87,10 @@ The files have removed any relation to JATOS (the online service used to run the
 These files are found in:
 
 Experiment 2 - `OrigProtocolWSingleWIDSimulation/Protocol_E2/ProtocolRotatedBackground/Experiment/AccelerationRotatedBackground/real_jatos_removed.html`.
-Experiment 3 Replication - `OrigProtocolWSingleWIDSimulation/Protocol_E3_Rep/Protocol/ExperimentScript/FilesFromJZIP/ReproductionReplication010425/experiment_jatos_r.html`.
+
+Experiment 3 Replication - `OrigProtocolWSingleWIDSimulation/Protocol_E3_Rep/Protocol/ExperimentScript/experiment_jatos_removed.html`.
+
+Experiment 3 Second Replication - `OrigProtocolWSingleWIDSimulation/Protocol_E3_SecondRep/Protocol/Experiment/experiment_jatos_removed.html`.
 
 ## Experiment scripts for Experiment 3 Replication
 
@@ -97,7 +100,7 @@ The zipped protocol folder for Experiment 3 Replication only includes a .jzip fo
 
 Follow the instructions for download on the JATOS website: https://www.jatos.org/ or the installation guide: https://www.jatos.org/Installation.
 
-### Import the Experiment 3 .jzip file
+### Import the Experiment 3 Replication .jzip file
 
 Follow this guide but select the .jzip found at `OrigProtocolWSingleWIDSimulation/Protocol_E3_Rep/Protocol/ExperimentScript/reproductionreplication010425.jzip`:
 https://www.jatos.org/Get-started
