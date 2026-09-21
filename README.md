@@ -10,6 +10,9 @@ The SHA256 key is used to seed a random number generator (RNG) which is used to 
 
 This process causes the trial order of the data itself to be dependent on the pre-registration document and the experiment script that generates the trial order, and therefore the data is proof that the pre-registration was written prior to data collection.
 
+## The crucial takeaway:
+In the protocol sum zip files is an experiment script that initialises itself with the SHA256 key. Guessing that SHA256 key is near enough impossible. Therefore, there is no way that the real data would have the same trial structure as the trials generated in the process in this folder. Changing the SHA256 key by 1 digit makes the whole thing fall apart, and changing a anything within the zip folder would change the SHA256 key.
+
 ## Repository Meaning
 This repository is designed to walk users through the steps to reproduce the trial order of each participant and thus demonstrates that the experiment was run after the pre-registration was written.
 
